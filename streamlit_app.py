@@ -1,5 +1,6 @@
 import os
 import shutil
+import time
 import streamlit as st
 
 # -----------------------------
@@ -20,8 +21,6 @@ if not os.path.exists(ROOT_DIR):
 # -----------------------------
 if "ruta" not in st.session_state:
     st.session_state["ruta"] = ROOT_DIR
-if "actualizado" not in st.session_state:
-    st.session_state["actualizado"] = False
 
 # -----------------------------
 # Funciones auxiliares
@@ -94,7 +93,6 @@ for carpeta in carpetas:
     # Abrir carpeta
     if col1.button(f"📁 {carpeta}", key=f"open_{carpeta}"):
         st.session_state["ruta"] = carpeta_path
-        st.experimental_rerun = False  # Solo para asegurar que Streamlit rerenderiza automáticamente
 
     # Editar carpeta
     nuevo_nombre = col2.text_input("", key=f"edit_{carpeta}", value=carpeta)
@@ -103,14 +101,12 @@ for carpeta in carpetas:
             nueva_ruta = os.path.join(st.session_state["ruta"], nuevo_nombre)
             os.rename(carpeta_path, nueva_ruta)
             st.success(f"✏️ Carpeta renombrada a '{nuevo_nombre}'")
-            # Actualizar lista de carpetas
             carpetas, _ = listar(st.session_state["ruta"])
 
     # Eliminar carpeta
     if col3.button("🗑️", key=f"del_{carpeta}"):
         shutil.rmtree(carpeta_path)
         st.success(f"🗑️ Carpeta '{carpeta}' eliminada")
-        # Actualizar lista de carpetas
         carpetas, _ = listar(st.session_state["ruta"])
 
 # Archivos
@@ -131,7 +127,7 @@ for archivo in archivos:
         if st.button("🗑️", key=f"del_file_{archivo}"):
             os.remove(ruta_archivo)
             st.success(f"🗑️ Archivo '{archivo}' eliminado")
-            archivos = listar(st.session_state["ruta"])[1]  # Actualizar lista de archivos
+            archivos = listar(st.session_state["ruta"])[1]
 
     # Vista previa universal
     ext = archivo.lower().split(".")[-1]
