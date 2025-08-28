@@ -16,7 +16,7 @@ if not os.path.exists(ROOT_DIR):
     os.makedirs(ROOT_DIR)
 
 # -----------------------------
-# Estado de la sesión
+# Estado de sesión
 # -----------------------------
 if "ruta" not in st.session_state:
     st.session_state["ruta"] = ROOT_DIR
@@ -37,7 +37,7 @@ def ir_atras():
     """Volver a la carpeta padre solo si no estamos en la raíz"""
     if st.session_state["ruta"] != ROOT_DIR:
         st.session_state["ruta"] = os.path.dirname(st.session_state["ruta"])
-        st.rerun()
+        st.experimental_rerun()
 
 def refrescar():
     """Refresca la vista del sistema sin recargar la página"""
@@ -74,7 +74,7 @@ with col4:
     if st.button("🔄 Actualizar"):
         refrescar()
 
-# Mostrar mensaje actualizado
+# Mensaje temporal de actualización
 if st.session_state["actualizado"]:
     st.success("📌 Página actualizada")
     st.session_state["actualizado"] = False
