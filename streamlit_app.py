@@ -58,7 +58,7 @@ def estilo_archivo(nombre):
 # -----------------------------
 col1, col2, col3, col4 = st.columns([1,3,2,1])
 
-# Atrás
+# Atrás solo si no estamos en la raíz
 with col1:
     if st.session_state["ruta"] != ROOT_DIR:
         if st.button("⬅️ Atrás"):
