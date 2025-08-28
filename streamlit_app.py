@@ -7,12 +7,12 @@ import streamlit as st
 # Configuración de la página
 # -----------------------------
 st.set_page_config(
-    page_title="CloudBox Empresarial", 
-    page_icon="☁️", 
+    page_title="CloudBox Empresarial",
+    page_icon="☁️",
     layout="wide"
 )
 st.markdown(
-    "<h1 style='text-align:center; color:#2E86C1;'>☁️ CloudBox Empresarial</h1>", 
+    "<h1 style='text-align:center; color:#2E86C1;'>☁️ CloudBox Empresarial</h1>",
     unsafe_allow_html=True
 )
 
