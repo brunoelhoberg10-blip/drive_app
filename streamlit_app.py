@@ -1,7 +1,6 @@
 import os
 import shutil
 import streamlit as st
-from datetime import datetime
 
 # -----------------------------
 # Configuración de la app
@@ -115,26 +114,24 @@ carpetas, archivos = listar(st.session_state["ruta"])
 # Carpetas
 for carpeta in carpetas:
     carpeta_path = os.path.join(st.session_state["ruta"], carpeta)
-    col1, col2, col3 = st.columns([4,2,1])
-    with col1:
-        # Navegar dentro de la carpeta
-        if st.button(f"📁 {carpeta}", key=f"carpeta_{carpeta}"):
-            st.session_state["ruta"] = carpeta_path
-            st.experimental_rerun()
-    with col2:
-        # Editar nombre de carpeta
-        nuevo_nombre = st.text_input(f"✏️ Cambiar nombre {carpeta}", key=f"edit_{carpeta}", value=carpeta)
-        if st.button(f"💾 Guardar", key=f"save_{carpeta}"):
-            nueva_ruta = os.path.join(st.session_state["ruta"], nuevo_nombre)
-            os.rename(carpeta_path, nueva_ruta)
-            st.success(f"✅ Carpeta renombrada a {nuevo_nombre}")
-            st.experimental_rerun()
-    with col3:
-        # Eliminar carpeta
-        if st.button("🗑️ Eliminar", key=f"del_folder_{carpeta}"):
-            shutil.rmtree(carpeta_path)
-            st.success(f"✅ Carpeta '{carpeta}' eliminada")
-            st.experimental_rerun()
+    col1, col2, col3 = st.columns([4,1,1])
+
+    # Clic en el nombre de la carpeta para entrar
+    if col1.button(f"📁 {carpeta}", key=f"open_{carpeta}"):
+        st.session_state["ruta"] = carpeta_path
+        st.experimental_rerun()
+
+    # Editar nombre de carpeta
+    nuevo_nombre = col2.text_input("", key=f"edit_{carpeta}", value=carpeta)
+    if col2.button("✏️", key=f"save_{carpeta}"):
+        nueva_ruta = os.path.join(st.session_state["ruta"], nuevo_nombre)
+        os.rename(carpeta_path, nueva_ruta)
+        st.experimental_rerun()
+
+    # Eliminar carpeta
+    if col3.button("🗑️", key=f"del_{carpeta}"):
+        shutil.rmtree(carpeta_path)
+        st.experimental_rerun()
 
 # Archivos
 for archivo in archivos:
@@ -146,7 +143,7 @@ for archivo in archivos:
         with open(ruta_archivo, "rb") as f:
             st.download_button("⬇️ Descargar", f, file_name=archivo, key=f"down_{archivo}")
     with col3:
-        if st.button("🗑️ Eliminar", key=f"del_{archivo}"):
+        if st.button("🗑️", key=f"del_file_{archivo}"):
             os.remove(ruta_archivo)
             st.experimental_rerun()
 
