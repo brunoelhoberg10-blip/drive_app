@@ -21,10 +21,7 @@ if not os.path.exists(ROOT_DIR):
 session_keys = ["ruta", "accion", "target", "refresh_request", "actualizado"]
 for key in session_keys:
     if key not in st.session_state:
-        if key == "ruta":
-            st.session_state[key] = ROOT_DIR
-        else:
-            st.session_state[key] = None if key in ["accion","target"] else False
+        st.session_state[key] = ROOT_DIR if key == "ruta" else False if key in ["refresh_request","actualizado"] else None
 
 # -----------------------------
 # Funciones auxiliares
@@ -49,10 +46,12 @@ if st.session_state["accion"]:
             st.session_state["ruta"] = os.path.dirname(st.session_state["ruta"])
         elif accion == "crear_carpeta":
             os.makedirs(target, exist_ok=True)
+            st.success(f"📂 Carpeta '{os.path.basename(target)}' creada")
         elif accion == "renombrar_carpeta":
             carpeta_path, nuevo_nombre = target
             nueva_ruta = os.path.join(st.session_state["ruta"], nuevo_nombre)
             os.rename(carpeta_path, nueva_ruta)
+            st.success(f"✏️ Carpeta renombrada a '{nuevo_nombre}'")
         elif accion == "eliminar_carpeta":
             shutil.rmtree(target)
             st.success(f"🗑️ Carpeta '{os.path.basename(target)}' eliminada")
@@ -67,7 +66,7 @@ if st.session_state["accion"]:
         st.session_state["refresh_request"] = True
 
 # -----------------------------
-# Rerun seguro AL FINAL
+# Rerun seguro FUERA de loops
 # -----------------------------
 if st.session_state.get("refresh_request", False):
     st.session_state["refresh_request"] = False
