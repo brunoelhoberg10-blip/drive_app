@@ -1,4 +1,5 @@
 import os
+import shutil
 import streamlit as st
 from datetime import datetime
 
@@ -22,6 +23,8 @@ if "ruta" not in st.session_state:
     st.session_state["ruta"] = ROOT_DIR
 if "actualizado" not in st.session_state:
     st.session_state["actualizado"] = False
+if "refresh_request" not in st.session_state:
+    st.session_state["refresh_request"] = False
 
 # -----------------------------
 # Funciones
@@ -40,8 +43,15 @@ def ir_atras():
         st.experimental_rerun()
 
 def refrescar():
-    """Refresca la vista del sistema sin recargar la página"""
+    """Marca que se quiere refrescar el sistema"""
     st.session_state["actualizado"] = True
+    st.session_state["refresh_request"] = True
+
+# -----------------------------
+# Refresh seguro
+# -----------------------------
+if st.session_state["refresh_request"]:
+    st.session_state["refresh_request"] = False
     st.experimental_rerun()
 
 # -----------------------------
@@ -104,9 +114,27 @@ carpetas, archivos = listar(st.session_state["ruta"])
 
 # Carpetas
 for carpeta in carpetas:
-    if st.button(f"📁 {carpeta}", key=f"carpeta_{carpeta}"):
-        st.session_state["ruta"] = os.path.join(st.session_state["ruta"], carpeta)
-        st.experimental_rerun()
+    carpeta_path = os.path.join(st.session_state["ruta"], carpeta)
+    col1, col2, col3 = st.columns([4,2,1])
+    with col1:
+        # Navegar dentro de la carpeta
+        if st.button(f"📁 {carpeta}", key=f"carpeta_{carpeta}"):
+            st.session_state["ruta"] = carpeta_path
+            st.experimental_rerun()
+    with col2:
+        # Editar nombre de carpeta
+        nuevo_nombre = st.text_input(f"✏️ Cambiar nombre {carpeta}", key=f"edit_{carpeta}", value=carpeta)
+        if st.button(f"💾 Guardar", key=f"save_{carpeta}"):
+            nueva_ruta = os.path.join(st.session_state["ruta"], nuevo_nombre)
+            os.rename(carpeta_path, nueva_ruta)
+            st.success(f"✅ Carpeta renombrada a {nuevo_nombre}")
+            st.experimental_rerun()
+    with col3:
+        # Eliminar carpeta
+        if st.button("🗑️ Eliminar", key=f"del_folder_{carpeta}"):
+            shutil.rmtree(carpeta_path)
+            st.success(f"✅ Carpeta '{carpeta}' eliminada")
+            st.experimental_rerun()
 
 # Archivos
 for archivo in archivos:
