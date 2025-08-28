@@ -1,5 +1,6 @@
 import os
 import streamlit as st
+from datetime import datetime
 
 # --- Configuración de la app ---
 st.set_page_config(page_title="CloudBox", page_icon="☁️", layout="wide")
@@ -10,40 +11,49 @@ ROOT_DIR = "cloudbox"
 if not os.path.exists(ROOT_DIR):
     os.makedirs(ROOT_DIR)
 
-# --- Estado de la sesión (navegación de carpetas) ---
+# --- Estado de sesión ---
 if "ruta" not in st.session_state:
     st.session_state["ruta"] = ROOT_DIR
 
 # --- Funciones ---
 def listar(ruta):
+    """Devuelve carpetas y archivos dentro de la ruta dada"""
     elementos = os.listdir(ruta)
-    archivos = [f for f in elementos if os.path.isfile(os.path.join(ruta, f))]
     carpetas = [f for f in elementos if os.path.isdir(os.path.join(ruta, f))]
+    archivos = [f for f in elementos if os.path.isfile(os.path.join(ruta, f))]
     return carpetas, archivos
 
 def ir_atras():
+    """Vuelve a la carpeta padre solo si no estamos en la raíz"""
     if st.session_state["ruta"] != ROOT_DIR:
         st.session_state["ruta"] = os.path.dirname(st.session_state["ruta"])
         st.rerun()
 
 # --- Controles superiores ---
 col1, col2, col3 = st.columns([1,2,1])
+
 with col1:
-    if st.button("⬅️ Atrás"):
-        ir_atras()
+    if st.session_state["ruta"] != ROOT_DIR:
+        if st.button("⬅️ Atrás"):
+            ir_atras()
+
 with col2:
     st.write(f"📂 Carpeta actual: `{st.session_state['ruta']}`")
+
 with col3:
-    nueva = st.text_input("📁 Nueva carpeta", "")
-    if st.button("➕ Crear") and nueva:
-        os.makedirs(os.path.join(st.session_state["ruta"], nueva), exist_ok=True)
-        st.success(f"✅ Carpeta '{nueva}' creada")
-        st.rerun()
+    nueva = st.text_input("📁 Nueva carpeta", key="nueva_carpeta")
+    if st.button("➕ Crear carpeta"):
+        if nueva:
+            nueva_ruta = os.path.join(st.session_state["ruta"], nueva)
+            os.makedirs(nueva_ruta, exist_ok=True)
+            st.success(f"✅ Carpeta '{nueva}' creada")
+            st.rerun()
+
+st.divider()
 
 # --- Subir archivos ---
-st.divider()
 st.subheader("⬆️ Subir archivo")
-archivo = st.file_uploader("Selecciona un archivo para subir", type=None)
+archivo = st.file_uploader("Selecciona un archivo", type=None)
 if archivo:
     ruta_guardar = os.path.join(st.session_state["ruta"], archivo.name)
     with open(ruta_guardar, "wb") as f:
@@ -52,18 +62,16 @@ if archivo:
     st.rerun()
 
 # --- Listar carpetas y archivos ---
-st.divider()
 st.subheader("📂 Contenido de la carpeta")
-
 carpetas, archivos = listar(st.session_state["ruta"])
 
-# --- Mostrar carpetas ---
+# --- Carpetas ---
 for carpeta in carpetas:
     if st.button(f"📁 {carpeta}", key=f"carpeta_{carpeta}"):
         st.session_state["ruta"] = os.path.join(st.session_state["ruta"], carpeta)
         st.rerun()
 
-# --- Mostrar archivos ---
+# --- Archivos ---
 for archivo in archivos:
     ruta_archivo = os.path.join(st.session_state["ruta"], archivo)
     col1, col2, col3 = st.columns([4,1,1])
@@ -77,7 +85,7 @@ for archivo in archivos:
             os.remove(ruta_archivo)
             st.rerun()
 
-    # --- Vista previa ---
+    # --- Vista previa según tipo ---
     if archivo.lower().endswith((".png", ".jpg", ".jpeg", ".gif")):
         st.image(ruta_archivo, use_column_width=True)
     elif archivo.lower().endswith(".pdf"):
