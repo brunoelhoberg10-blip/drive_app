@@ -30,6 +30,15 @@ if "ruta" not in st.session_state:
     st.session_state["ruta"] = ROOT_DIR
 if "uploader_count" not in st.session_state:
     st.session_state["uploader_count"] = 0
+if "reload" not in st.session_state:
+    st.session_state["reload"] = False
+
+# -----------------------------
+# Manejo de recarga
+# -----------------------------
+if st.session_state["reload"]:
+    st.session_state["reload"] = False
+    st.experimental_rerun()
 
 # -----------------------------
 # Funciones auxiliares
@@ -58,9 +67,9 @@ def estilo_archivo(nombre):
 # -----------------------------
 col1, col2, col3, col4 = st.columns([1,3,2,1])
 
-# Atrás solo si no estamos en la raíz
+# Atrás solo si no estamos en la raíz (comparación absoluta)
 with col1:
-    if st.session_state["ruta"] != ROOT_DIR:
+    if os.path.abspath(st.session_state["ruta"]) != os.path.abspath(ROOT_DIR):
         if st.button("⬅️ Atrás"):
             st.session_state["ruta"] = os.path.dirname(st.session_state["ruta"])
 
@@ -79,6 +88,7 @@ with col3:
             placeholder.success(f"📂 Carpeta '{nueva}' creada")
             time.sleep(1)
             placeholder.empty()
+            st.session_state["reload"] = True
 
 # Actualizar
 with col4:
@@ -87,13 +97,14 @@ with col4:
         placeholder.success("📌 Página actualizada")
         time.sleep(1)
         placeholder.empty()
+        st.session_state["reload"] = True
 
 st.divider()
 
 # -----------------------------
 # Subir archivos (solo dentro de carpetas)
 # -----------------------------
-if st.session_state["ruta"] != ROOT_DIR:
+if os.path.abspath(st.session_state["ruta"]) != os.path.abspath(ROOT_DIR):
     st.subheader("⬆️ Subir archivos")
     uploader_key = f"uploader_{st.session_state['uploader_count']}"
     archivos_subir = st.file_uploader(
@@ -114,7 +125,7 @@ if st.session_state["ruta"] != ROOT_DIR:
         placeholder.empty()
 
         st.session_state["uploader_count"] += 1
-        st.experimental_rerun()
+        st.session_state["reload"] = True
 
 st.divider()
 
@@ -125,7 +136,7 @@ st.subheader("📂 Contenido de la carpeta")
 carpetas, archivos = listar(st.session_state["ruta"])
 
 # Mostrar solo carpetas si estamos en la raíz
-if st.session_state["ruta"] == ROOT_DIR:
+if os.path.abspath(st.session_state["ruta"]) == os.path.abspath(ROOT_DIR):
     archivos = []
 
 # Manejo de carpetas con menú
@@ -136,6 +147,7 @@ for carpeta in carpetas:
     with col1:
         if st.button(f"📁 {carpeta}", key=f"open_{carpeta}"):
             st.session_state["ruta"] = carpeta_path
+            st.session_state["reload"] = True
 
     with col2:
         accion = st.selectbox(
@@ -147,7 +159,7 @@ for carpeta in carpetas:
             placeholder.success(f"🗑️ Carpeta '{carpeta}' eliminada")
             time.sleep(1)
             placeholder.empty()
-            st.experimental_rerun()
+            st.session_state["reload"] = True
         if accion == "Editar":
             nuevo_nombre = st.text_input(
                 "Nuevo nombre:", value=carpeta, key=f"edit_{carpeta}"
@@ -161,7 +173,7 @@ for carpeta in carpetas:
                     placeholder.success(f"✏️ Carpeta renombrada a '{nuevo_nombre}'")
                     time.sleep(1)
                     placeholder.empty()
-                    st.experimental_rerun()
+                    st.session_state["reload"] = True
             if st.button("Guardar", key=f"save_{carpeta}"):
                 st.session_state[f"enter_pressed_{carpeta}"] = True
 
@@ -181,7 +193,7 @@ for archivo in archivos:
             placeholder.success(f"🗑️ Archivo '{archivo}' eliminado")
             time.sleep(1)
             placeholder.empty()
-            st.experimental_rerun()
+            st.session_state["reload"] = True
 
     # Vista previa
     ext = archivo.lower().split(".")[-1]
