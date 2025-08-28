@@ -66,4 +66,4 @@ for archivo in archivos:
 if st.session_state["ruta"] != ROOT_DIR:
     if st.button("⬅️ Volver"):
         st.session_state["ruta"] = os.path.dirname(st.session_state["ruta"])
-        st.rerun().
+        st.rerun()
