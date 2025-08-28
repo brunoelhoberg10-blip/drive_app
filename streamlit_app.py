@@ -53,7 +53,10 @@ with col3:
         if nueva:
             nueva_ruta = os.path.join(st.session_state["ruta"], nueva)
             os.makedirs(nueva_ruta, exist_ok=True)
-            st.success(f"📂 Carpeta '{nueva}' creada")
+            placeholder = st.empty()
+            placeholder.success(f"📂 Carpeta '{nueva}' creada")
+            time.sleep(2)
+            placeholder.empty()
 
 # Actualizar
 with col4:
@@ -75,7 +78,10 @@ if archivos_subir:
         ruta_guardar = os.path.join(st.session_state["ruta"], archivo.name)
         with open(ruta_guardar, "wb") as f:
             f.write(archivo.read())
-    st.success(f"✅ {len(archivos_subir)} archivo(s) subido(s) con éxito")
+    placeholder = st.empty()
+    placeholder.success(f"✅ {len(archivos_subir)} archivo(s) subido(s) con éxito")
+    time.sleep(2)
+    placeholder.empty()
 
 st.divider()
 
@@ -100,18 +106,20 @@ for carpeta in carpetas:
         if nuevo_nombre and nuevo_nombre != carpeta:
             nueva_ruta = os.path.join(st.session_state["ruta"], nuevo_nombre)
             os.rename(carpeta_path, nueva_ruta)
-            st.success(f"✏️ Carpeta renombrada a '{nuevo_nombre}'")
+            placeholder = st.empty()
+            placeholder.success(f"✏️ Carpeta renombrada a '{nuevo_nombre}'")
+            time.sleep(2)
+            placeholder.empty()
             carpetas, _ = listar(st.session_state["ruta"])
 
-# Eliminar carpeta
-if col3.button("🗑️", key=f"del_{carpeta}"):
-    shutil.rmtree(carpeta_path)
-    placeholder = st.empty()  # contenedor temporal
-    placeholder.success(f"🗑️ Carpeta '{carpeta}' eliminada")
-    carpetas, _ = listar(st.session_state["ruta"])
-    time.sleep(2)
-    placeholder.empty()
-
+    # Eliminar carpeta
+    if col3.button("🗑️", key=f"del_{carpeta}"):
+        shutil.rmtree(carpeta_path)
+        placeholder = st.empty()
+        placeholder.success(f"🗑️ Carpeta '{carpeta}' eliminada")
+        carpetas, _ = listar(st.session_state["ruta"])
+        time.sleep(2)
+        placeholder.empty()
 
 # Archivos
 for archivo in archivos:
@@ -130,8 +138,11 @@ for archivo in archivos:
     with col3:
         if st.button("🗑️", key=f"del_file_{archivo}"):
             os.remove(ruta_archivo)
-            st.success(f"🗑️ Archivo '{archivo}' eliminado")
+            placeholder = st.empty()
+            placeholder.success(f"🗑️ Archivo '{archivo}' eliminado")
             archivos = listar(st.session_state["ruta"])[1]
+            time.sleep(2)
+            placeholder.empty()
 
     # Vista previa universal
     ext = archivo.lower().split(".")[-1]
