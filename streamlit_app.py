@@ -56,10 +56,17 @@ with col3:
             os.makedirs(nueva_ruta, exist_ok=True)
             st.success(f"📂 Carpeta '{nueva}' creada")
 
+import time
+
 # Actualizar
 with col4:
     if st.button("🔄 Actualizar"):
+        placeholder = st.empty()  # Contenedor temporal
+        placeholder.success("📌 Página actualizada")
+        time.sleep(2)  # Esperar 2 segundos
+        placeholder.empty()  # Borrar el mensaje
         st.session_state["actualizado"] = True
+
 
 if st.session_state["actualizado"]:
     st.success("📌 Página actualizada")
