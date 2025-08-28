@@ -103,11 +103,15 @@ for carpeta in carpetas:
             st.success(f"✏️ Carpeta renombrada a '{nuevo_nombre}'")
             carpetas, _ = listar(st.session_state["ruta"])
 
-    # Eliminar carpeta
-    if col3.button("🗑️", key=f"del_{carpeta}"):
-        shutil.rmtree(carpeta_path)
-        st.success(f"🗑️ Carpeta '{carpeta}' eliminada")
-        carpetas, _ = listar(st.session_state["ruta"])
+# Eliminar carpeta
+if col3.button("🗑️", key=f"del_{carpeta}"):
+    shutil.rmtree(carpeta_path)
+    placeholder = st.empty()  # contenedor temporal
+    placeholder.success(f"🗑️ Carpeta '{carpeta}' eliminada")
+    carpetas, _ = listar(st.session_state["ruta"])
+    time.sleep(2)
+    placeholder.empty()
+
 
 # Archivos
 for archivo in archivos:
