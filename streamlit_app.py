@@ -18,19 +18,16 @@ if not os.path.exists(ROOT_DIR):
 # -----------------------------
 # Estado de sesión
 # -----------------------------
-if "ruta" not in st.session_state:
-    st.session_state["ruta"] = ROOT_DIR
-if "accion" not in st.session_state:
-    st.session_state["accion"] = None
-if "target" not in st.session_state:
-    st.session_state["target"] = None
-if "refresh_request" not in st.session_state:
-    st.session_state["refresh_request"] = False
-if "actualizado" not in st.session_state:
-    st.session_state["actualizado"] = False
+session_keys = ["ruta", "accion", "target", "refresh_request", "actualizado"]
+for key in session_keys:
+    if key not in st.session_state:
+        if key == "ruta":
+            st.session_state[key] = ROOT_DIR
+        else:
+            st.session_state[key] = None if key in ["accion","target"] else False
 
 # -----------------------------
-# Funciones
+# Funciones auxiliares
 # -----------------------------
 def listar(ruta):
     elementos = os.listdir(ruta)
@@ -39,13 +36,13 @@ def listar(ruta):
     return carpetas, archivos
 
 # -----------------------------
-# Ejecutar acción pendiente (seguro)
+# Ejecutar acción pendiente AL INICIO
 # -----------------------------
 if st.session_state["accion"]:
     try:
         accion = st.session_state["accion"]
         target = st.session_state["target"]
-        
+
         if accion == "abrir_carpeta":
             st.session_state["ruta"] = target
         elif accion == "atrás":
@@ -58,8 +55,10 @@ if st.session_state["accion"]:
             os.rename(carpeta_path, nueva_ruta)
         elif accion == "eliminar_carpeta":
             shutil.rmtree(target)
+            st.success(f"🗑️ Carpeta '{os.path.basename(target)}' eliminada")
         elif accion == "eliminar_archivo":
             os.remove(target)
+            st.success(f"🗑️ Archivo '{os.path.basename(target)}' eliminado")
     except Exception as e:
         st.error(f"❌ Error al ejecutar acción: {e}")
     finally:
@@ -68,9 +67,9 @@ if st.session_state["accion"]:
         st.session_state["refresh_request"] = True
 
 # -----------------------------
-# Rerun seguro si se pidió
+# Rerun seguro AL FINAL
 # -----------------------------
-if st.session_state["refresh_request"]:
+if st.session_state.get("refresh_request", False):
     st.session_state["refresh_request"] = False
     st.experimental_rerun()
 
@@ -145,8 +144,9 @@ for carpeta in carpetas:
     # Editar carpeta
     nuevo_nombre = col2.text_input("", key=f"edit_{carpeta}", value=carpeta)
     if col2.button("✏️", key=f"save_{carpeta}"):
-        st.session_state["accion"] = "renombrar_carpeta"
-        st.session_state["target"] = (carpeta_path, nuevo_nombre)
+        if nuevo_nombre and nuevo_nombre != carpeta:
+            st.session_state["accion"] = "renombrar_carpeta"
+            st.session_state["target"] = (carpeta_path, nuevo_nombre)
 
     # Eliminar carpeta
     if col3.button("🗑️", key=f"del_{carpeta}"):
@@ -161,10 +161,12 @@ for archivo in archivos:
     with col1:
         st.markdown(f"📄 **{archivo}**")
 
+    # Descargar
     with col2:
         with open(ruta_archivo, "rb") as f:
             st.download_button("⬇️ Descargar", f, file_name=archivo, key=f"down_{archivo}")
 
+    # Eliminar
     with col3:
         if st.button("🗑️", key=f"del_file_{archivo}"):
             st.session_state["accion"] = "eliminar_archivo"
@@ -172,7 +174,6 @@ for archivo in archivos:
 
     # Vista previa universal
     ext = archivo.lower().split(".")[-1]
-    
     if ext in ["png", "jpg", "jpeg", "gif"]:
         st.image(ruta_archivo, use_column_width=True)
     elif ext == "pdf":
