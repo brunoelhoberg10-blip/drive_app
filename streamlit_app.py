@@ -3,13 +3,13 @@ import shutil
 import streamlit as st
 
 # -----------------------------
-# Configuración de la app
+# Configuración
 # -----------------------------
 st.set_page_config(page_title="CloudBox Empresarial", page_icon="☁️", layout="wide")
 st.markdown("<h1 style='text-align:center; color:#2E86C1;'>☁️ CloudBox Empresarial</h1>", unsafe_allow_html=True)
 
 # -----------------------------
-# Carpeta raíz central
+# Carpeta raíz
 # -----------------------------
 ROOT_DIR = "cloudbox"
 if not os.path.exists(ROOT_DIR):
@@ -20,6 +20,10 @@ if not os.path.exists(ROOT_DIR):
 # -----------------------------
 if "ruta" not in st.session_state:
     st.session_state["ruta"] = ROOT_DIR
+if "accion" not in st.session_state:
+    st.session_state["accion"] = None
+if "target" not in st.session_state:
+    st.session_state["target"] = None
 if "actualizado" not in st.session_state:
     st.session_state["actualizado"] = False
 if "refresh_request" not in st.session_state:
@@ -29,26 +33,21 @@ if "refresh_request" not in st.session_state:
 # Funciones
 # -----------------------------
 def listar(ruta):
-    """Devuelve carpetas y archivos dentro de la ruta dada"""
     elementos = os.listdir(ruta)
     carpetas = [f for f in elementos if os.path.isdir(os.path.join(ruta, f))]
     archivos = [f for f in elementos if os.path.isfile(os.path.join(ruta, f))]
     return carpetas, archivos
 
 def ir_atras():
-    """Volver a la carpeta padre solo si no estamos en la raíz"""
     if st.session_state["ruta"] != ROOT_DIR:
         st.session_state["ruta"] = os.path.dirname(st.session_state["ruta"])
         st.experimental_rerun()
 
 def refrescar():
-    """Marca que se quiere refrescar el sistema"""
     st.session_state["actualizado"] = True
     st.session_state["refresh_request"] = True
 
-# -----------------------------
 # Refresh seguro
-# -----------------------------
 if st.session_state["refresh_request"]:
     st.session_state["refresh_request"] = False
     st.experimental_rerun()
@@ -83,7 +82,6 @@ with col4:
     if st.button("🔄 Actualizar"):
         refrescar()
 
-# Mensaje temporal de actualización
 if st.session_state["actualizado"]:
     st.success("📌 Página actualizada")
     st.session_state["actualizado"] = False
@@ -116,45 +114,71 @@ for carpeta in carpetas:
     carpeta_path = os.path.join(st.session_state["ruta"], carpeta)
     col1, col2, col3 = st.columns([4,1,1])
 
-    # Clic en el nombre de la carpeta para entrar
+    # Navegar
     if col1.button(f"📁 {carpeta}", key=f"open_{carpeta}"):
-        st.session_state["ruta"] = carpeta_path
-        st.experimental_rerun()
+        st.session_state["accion"] = "abrir_carpeta"
+        st.session_state["target"] = carpeta_path
 
-    # Editar nombre de carpeta
+    # Editar
     nuevo_nombre = col2.text_input("", key=f"edit_{carpeta}", value=carpeta)
     if col2.button("✏️", key=f"save_{carpeta}"):
-        nueva_ruta = os.path.join(st.session_state["ruta"], nuevo_nombre)
-        os.rename(carpeta_path, nueva_ruta)
-        st.experimental_rerun()
+        st.session_state["accion"] = "renombrar_carpeta"
+        st.session_state["target"] = (carpeta_path, nuevo_nombre)
 
-    # Eliminar carpeta
+    # Eliminar
     if col3.button("🗑️", key=f"del_{carpeta}"):
-        shutil.rmtree(carpeta_path)
-        st.experimental_rerun()
+        st.session_state["accion"] = "eliminar_carpeta"
+        st.session_state["target"] = carpeta_path
 
 # Archivos
 for archivo in archivos:
     ruta_archivo = os.path.join(st.session_state["ruta"], archivo)
     col1, col2, col3 = st.columns([4,1,1])
+    
     with col1:
         st.markdown(f"📄 **{archivo}**")
+
     with col2:
         with open(ruta_archivo, "rb") as f:
             st.download_button("⬇️ Descargar", f, file_name=archivo, key=f"down_{archivo}")
+
     with col3:
         if st.button("🗑️", key=f"del_file_{archivo}"):
-            os.remove(ruta_archivo)
-            st.experimental_rerun()
+            st.session_state["accion"] = "eliminar_archivo"
+            st.session_state["target"] = ruta_archivo
 
-    # Vista previa
-    if archivo.lower().endswith((".png", ".jpg", ".jpeg", ".gif")):
+    # Vista previa universal
+    ext = archivo.lower().split(".")[-1]
+    
+    if ext in ["png", "jpg", "jpeg", "gif"]:
         st.image(ruta_archivo, use_column_width=True)
-    elif archivo.lower().endswith(".pdf"):
-        st.write("📖 Vista previa PDF (descarga para abrir en visor externo):")
+    elif ext == "pdf":
+        st.write("📖 Vista previa PDF (abrir en visor externo o descargar):")
         with open(ruta_archivo, "rb") as f:
             st.download_button("📂 Abrir PDF", f, file_name=archivo, key=f"view_{archivo}")
-    elif archivo.lower().endswith((".txt", ".csv", ".md")):
-        with open(ruta_archivo, "r", encoding="utf-8") as f:
+    elif ext in ["txt", "csv", "md"]:
+        with open(ruta_archivo, "r", encoding="utf-8", errors="ignore") as f:
             contenido = f.read()
         st.text_area("📜 Contenido:", contenido, height=200, key=f"text_{archivo}")
+    else:
+        st.info("🛈 Vista previa solo disponible para imágenes, PDF y textos. Usa el botón 'Descargar' para abrir este archivo.")
+
+# -----------------------------
+# Ejecutar acción fuera de bucles (seguro)
+# -----------------------------
+if st.session_state["accion"]:
+    if st.session_state["accion"] == "abrir_carpeta":
+        st.session_state["ruta"] = st.session_state["target"]
+    elif st.session_state["accion"] == "renombrar_carpeta":
+        carpeta_path, nuevo_nombre = st.session_state["target"]
+        nueva_ruta = os.path.join(st.session_state["ruta"], nuevo_nombre)
+        os.rename(carpeta_path, nueva_ruta)
+    elif st.session_state["accion"] == "eliminar_carpeta":
+        shutil.rmtree(st.session_state["target"])
+    elif st.session_state["accion"] == "eliminar_archivo":
+        os.remove(st.session_state["target"])
+
+    # Limpiar estado y recargar
+    st.session_state["accion"] = None
+    st.session_state["target"] = None
+    st.experimental_rerun()
