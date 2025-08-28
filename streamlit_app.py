@@ -72,20 +72,18 @@ st.divider()
 # Subir archivos múltiples
 # -----------------------------
 st.subheader("⬆️ Subir archivos")
-archivos_subir = st.file_uploader("Selecciona archivos", type=None, accept_multiple_files=True, key="uploader")
+archivos_subir = st.file_uploader("Selecciona archivos", type=None, accept_multiple_files=True)
 if archivos_subir:
     for archivo in archivos_subir:
-        # Guardar dentro de la carpeta actual
         ruta_guardar = os.path.join(st.session_state["ruta"], archivo.name)
         with open(ruta_guardar, "wb") as f:
             f.write(archivo.read())
-    # Mostrar mensaje temporal
     placeholder = st.empty()
     placeholder.success(f"✅ {len(archivos_subir)} archivo(s) subido(s) con éxito")
     time.sleep(2)
     placeholder.empty()
-    # Limpiar uploader para que no se quede el archivo en pantalla
-    st.session_state["uploader"] = None
+
+st.divider()
 
 # -----------------------------
 # Listar carpetas y archivos
