@@ -34,7 +34,7 @@ if "reload" not in st.session_state:
     st.session_state["reload"] = False
 
 # -----------------------------
-# Manejo de recarga
+# Manejo de recarga después de acciones
 # -----------------------------
 if st.session_state["reload"]:
     st.session_state["reload"] = False
@@ -72,6 +72,7 @@ with col1:
     if os.path.abspath(st.session_state["ruta"]) != os.path.abspath(ROOT_DIR):
         if st.button("⬅️ Atrás"):
             st.session_state["ruta"] = os.path.dirname(st.session_state["ruta"])
+            st.session_state["reload"] = True
 
 # Carpeta actual
 with col2:
@@ -84,19 +85,15 @@ with col3:
         if nueva:
             nueva_ruta = os.path.join(st.session_state["ruta"], nueva)
             os.makedirs(nueva_ruta, exist_ok=True)
-            placeholder = st.empty()
-            placeholder.success(f"📂 Carpeta '{nueva}' creada")
+            st.success(f"📂 Carpeta '{nueva}' creada")
             time.sleep(1)
-            placeholder.empty()
             st.session_state["reload"] = True
 
 # Actualizar
 with col4:
     if st.button("🔄 Actualizar"):
-        placeholder = st.empty()
-        placeholder.success("📌 Página actualizada")
+        st.success("📌 Página actualizada")
         time.sleep(1)
-        placeholder.empty()
         st.session_state["reload"] = True
 
 st.divider()
@@ -119,10 +116,8 @@ if os.path.abspath(st.session_state["ruta"]) != os.path.abspath(ROOT_DIR):
             ruta_guardar = os.path.join(st.session_state["ruta"], archivo.name)
             with open(ruta_guardar, "wb") as f:
                 f.write(archivo.read())
-        placeholder = st.empty()
-        placeholder.success(f"✅ {len(archivos_subir)} archivo(s) subido(s) con éxito")
+        st.success(f"✅ {len(archivos_subir)} archivo(s) subido(s) con éxito")
         time.sleep(1)
-        placeholder.empty()
 
         st.session_state["uploader_count"] += 1
         st.session_state["reload"] = True
@@ -139,45 +134,56 @@ carpetas, archivos = listar(st.session_state["ruta"])
 if os.path.abspath(st.session_state["ruta"]) == os.path.abspath(ROOT_DIR):
     archivos = []
 
+# -----------------------------
 # Manejo de carpetas con menú
+# -----------------------------
 for carpeta in carpetas:
     carpeta_path = os.path.join(st.session_state["ruta"], carpeta)
     col1, col2 = st.columns([4,1])
 
+    # Abrir carpeta
     with col1:
         if st.button(f"📁 {carpeta}", key=f"open_{carpeta}"):
             st.session_state["ruta"] = carpeta_path
             st.session_state["reload"] = True
 
+    # Menú de opciones
     with col2:
         accion = st.selectbox(
             "Opciones", ["", "Editar", "Eliminar"], key=f"menu_{carpeta}", index=0
         )
+
+        # Eliminar carpeta con confirmación y 1 segundo de espera
         if accion == "Eliminar":
-            shutil.rmtree(carpeta_path)
-            placeholder = st.empty()
-            placeholder.success(f"🗑️ Carpeta '{carpeta}' eliminada")
-            time.sleep(1)
-            placeholder.empty()
-            st.session_state["reload"] = True
+            confirmar = st.button(f"Confirmar eliminación '{carpeta}'", key=f"confirm_del_{carpeta}")
+            if confirmar:
+                st.warning(f"🗑️ Eliminando carpeta '{carpeta}' en 1 segundo...")
+                time.sleep(1)
+                shutil.rmtree(carpeta_path)
+                st.success(f"✅ Carpeta '{carpeta}' eliminada")
+                st.session_state["reload"] = True
+
+        # Editar carpeta: cambiar nombre con Enter o botón Guardar
         if accion == "Editar":
             nuevo_nombre = st.text_input(
                 "Nuevo nombre:", value=carpeta, key=f"edit_{carpeta}"
             )
+
             if st.session_state.get(f"enter_pressed_{carpeta}", False):
                 st.session_state[f"enter_pressed_{carpeta}"] = False
                 if nuevo_nombre and nuevo_nombre != carpeta:
                     nueva_ruta = os.path.join(st.session_state["ruta"], nuevo_nombre)
+                    time.sleep(1)  # esperar 1 segundo antes de renombrar
                     os.rename(carpeta_path, nueva_ruta)
-                    placeholder = st.empty()
-                    placeholder.success(f"✏️ Carpeta renombrada a '{nuevo_nombre}'")
-                    time.sleep(1)
-                    placeholder.empty()
+                    st.success(f"✏️ Carpeta renombrada a '{nuevo_nombre}'")
                     st.session_state["reload"] = True
+
             if st.button("Guardar", key=f"save_{carpeta}"):
                 st.session_state[f"enter_pressed_{carpeta}"] = True
 
+# -----------------------------
 # Manejo de archivos (solo dentro de carpetas)
+# -----------------------------
 for archivo in archivos:
     ruta_archivo = os.path.join(st.session_state["ruta"], archivo)
     col1, col2, col3 = st.columns([4,1,1])
@@ -189,10 +195,8 @@ for archivo in archivos:
     with col3:
         if st.button("🗑️", key=f"del_file_{archivo}"):
             os.remove(ruta_archivo)
-            placeholder = st.empty()
-            placeholder.success(f"🗑️ Archivo '{archivo}' eliminado")
+            st.success(f"🗑️ Archivo '{archivo}' eliminado")
             time.sleep(1)
-            placeholder.empty()
             st.session_state["reload"] = True
 
     # Vista previa
