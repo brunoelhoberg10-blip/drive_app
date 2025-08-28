@@ -74,9 +74,12 @@ with col1:
             st.session_state["ruta"] = os.path.dirname(st.session_state["ruta"])
             st.session_state["reload"] = True
 
-# Carpeta actual
+# Carpeta actual estilo "En línea"
 with col2:
-    st.markdown(f"📂 **Carpeta actual:** `{st.session_state['ruta']}`")
+    st.markdown(
+        f"🟢 **En línea - {os.path.basename(st.session_state['ruta'])}**",
+        unsafe_allow_html=True
+    )
 
 # Crear carpeta
 with col3:
