@@ -33,9 +33,9 @@ def listar(ruta):
     return carpetas, archivos
 
 # -----------------------------
-# Ejecutar acción pendiente AL INICIO
+# Ejecutar acción pendiente AL INICIO (FUERA DE LOOPS)
 # -----------------------------
-if st.session_state["accion"]:
+if st.session_state.get("accion"):
     try:
         accion = st.session_state["accion"]
         target = st.session_state["target"]
@@ -58,18 +58,18 @@ if st.session_state["accion"]:
         elif accion == "eliminar_archivo":
             os.remove(target)
             st.success(f"🗑️ Archivo '{os.path.basename(target)}' eliminado")
+
+        st.session_state["refresh_request"] = True
     except Exception as e:
         st.error(f"❌ Error al ejecutar acción: {e}")
     finally:
-        # Limpiar acción
         st.session_state["accion"] = None
         st.session_state["target"] = None
-        st.session_state["refresh_request"] = True
 
 # -----------------------------
-# Rerun seguro FUERA de loops y columnas
+# Rerun seguro
 # -----------------------------
-if st.session_state.get("refresh_request", False):
+if st.session_state.get("refresh_request"):
     st.session_state["refresh_request"] = False
     st.experimental_rerun()
 
