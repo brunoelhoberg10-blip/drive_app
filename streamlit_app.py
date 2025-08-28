@@ -28,8 +28,8 @@ if not os.path.exists(ROOT_DIR):
 # -----------------------------
 if "ruta" not in st.session_state:
     st.session_state["ruta"] = ROOT_DIR
-if "uploader" not in st.session_state:
-    st.session_state["uploader"] = None
+if "uploader_count" not in st.session_state:
+    st.session_state["uploader_count"] = 0
 
 # -----------------------------
 # Funciones auxiliares
@@ -39,6 +39,17 @@ def listar(ruta):
     carpetas = [f for f in elementos if os.path.isdir(os.path.join(ruta, f))]
     archivos = [f for f in elementos if os.path.isfile(os.path.join(ruta, f))]
     return carpetas, archivos
+
+def icono_archivo(nombre):
+    ext = nombre.lower().split(".")[-1]
+    if ext in ["png", "jpg", "jpeg", "gif"]:
+        return "🖼️"
+    elif ext == "pdf":
+        return "📄"
+    elif ext in ["txt", "csv", "md"]:
+        return "📜"
+    else:
+        return "📁"
 
 # -----------------------------
 # Controles superiores
@@ -64,7 +75,7 @@ with col3:
             os.makedirs(nueva_ruta, exist_ok=True)
             placeholder = st.empty()
             placeholder.success(f"📂 Carpeta '{nueva}' creada")
-            time.sleep(2)
+            time.sleep(1)
             placeholder.empty()
 
 # Actualizar
@@ -72,30 +83,36 @@ with col4:
     if st.button("🔄 Actualizar"):
         placeholder = st.empty()
         placeholder.success("📌 Página actualizada")
-        time.sleep(2)
+        time.sleep(1)
         placeholder.empty()
 
 st.divider()
 
 # -----------------------------
-# Subir archivos múltiples
+# Subir archivos (solo dentro de carpetas)
 # -----------------------------
-st.subheader("⬆️ Subir archivos")
-archivos_subir = st.file_uploader(
-    "Selecciona archivos", type=None, accept_multiple_files=True, key="uploader"
-)
-if archivos_subir:
-    for archivo in archivos_subir:
-        ruta_guardar = os.path.join(st.session_state["ruta"], archivo.name)
-        with open(ruta_guardar, "wb") as f:
-            f.write(archivo.read())
-    placeholder = st.empty()
-    placeholder.success(f"✅ {len(archivos_subir)} archivo(s) subido(s) con éxito")
-    time.sleep(2)
-    placeholder.empty()
-    
-    # Limpiar uploader después de subir
-    st.session_state["uploader"] = None
+if st.session_state["ruta"] != ROOT_DIR:
+    st.subheader("⬆️ Subir archivos")
+    uploader_key = f"uploader_{st.session_state['uploader_count']}"
+    archivos_subir = st.file_uploader(
+        "Selecciona archivos", type=None, accept_multiple_files=True, key=uploader_key
+    )
+
+    if archivos_subir:
+        if not os.path.exists(st.session_state["ruta"]):
+            os.makedirs(st.session_state["ruta"])
+        
+        for archivo in archivos_subir:
+            ruta_guardar = os.path.join(st.session_state["ruta"], archivo.name)
+            with open(ruta_guardar, "wb") as f:
+                f.write(archivo.read())
+        placeholder = st.empty()
+        placeholder.success(f"✅ {len(archivos_subir)} archivo(s) subido(s) con éxito")
+        time.sleep(1)
+        placeholder.empty()
+
+        st.session_state["uploader_count"] += 1
+        st.experimental_rerun()
 
 st.divider()
 
@@ -105,23 +122,23 @@ st.divider()
 st.subheader("📂 Contenido de la carpeta")
 carpetas, archivos = listar(st.session_state["ruta"])
 
-# Manejo de carpetas con menú "clic derecho" simulado
+# Mostrar solo carpetas si estamos en la raíz
+if st.session_state["ruta"] == ROOT_DIR:
+    archivos = []
+
+# Manejo de carpetas con menú
 for carpeta in carpetas:
     carpeta_path = os.path.join(st.session_state["ruta"], carpeta)
     col1, col2 = st.columns([4,1])
 
     with col1:
-        # Abrir carpeta
         if st.button(f"📁 {carpeta}", key=f"open_{carpeta}"):
             st.session_state["ruta"] = carpeta_path
 
     with col2:
-        # Menú desplegable
         accion = st.selectbox(
             "Opciones", ["", "Editar", "Eliminar"], key=f"menu_{carpeta}", index=0
         )
-
-        # Eliminar carpeta
         if accion == "Eliminar":
             shutil.rmtree(carpeta_path)
             placeholder = st.empty()
@@ -129,8 +146,6 @@ for carpeta in carpetas:
             time.sleep(1)
             placeholder.empty()
             st.experimental_rerun()
-
-        # Editar carpeta
         if accion == "Editar":
             nuevo_nombre = st.text_input(
                 "Nuevo nombre:", value=carpeta, key=f"edit_{carpeta}"
@@ -145,34 +160,28 @@ for carpeta in carpetas:
                     time.sleep(1)
                     placeholder.empty()
                     st.experimental_rerun()
-
             if st.button("Guardar", key=f"save_{carpeta}"):
                 st.session_state[f"enter_pressed_{carpeta}"] = True
 
-# Manejo de archivos
+# Manejo de archivos (solo dentro de carpetas)
 for archivo in archivos:
     ruta_archivo = os.path.join(st.session_state["ruta"], archivo)
     col1, col2, col3 = st.columns([4,1,1])
-    
     with col1:
-        st.markdown(f"📄 **{archivo}**")
-
-    # Descargar
+        st.markdown(f"{icono_archivo(archivo)} **{archivo}**")
     with col2:
         with open(ruta_archivo, "rb") as f:
             st.download_button("⬇️ Descargar", f, file_name=archivo, key=f"down_{archivo}")
-
-    # Eliminar archivo
     with col3:
         if st.button("🗑️", key=f"del_file_{archivo}"):
             os.remove(ruta_archivo)
             placeholder = st.empty()
             placeholder.success(f"🗑️ Archivo '{archivo}' eliminado")
-            archivos = listar(st.session_state["ruta"])[1]
-            time.sleep(2)
+            time.sleep(1)
             placeholder.empty()
+            st.experimental_rerun()
 
-    # Vista previa según tipo
+    # Vista previa
     ext = archivo.lower().split(".")[-1]
     if ext in ["png", "jpg", "jpeg", "gif"]:
         st.image(ruta_archivo, use_column_width=True)
@@ -184,8 +193,3 @@ for archivo in archivos:
         with open(ruta_archivo, "r", encoding="utf-8", errors="ignore") as f:
             contenido = f.read()
         st.text_area("📜 Contenido:", contenido, height=200, key=f"text_{archivo}")
-    else:
-        st.info(
-            "🛈 Vista previa solo disponible para imágenes, PDF y textos. "
-            "Usa el botón 'Descargar' para abrir este archivo."
-        )
