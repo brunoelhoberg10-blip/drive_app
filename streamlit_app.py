@@ -4,10 +4,17 @@ import time
 import streamlit as st
 
 # -----------------------------
-# Configuración
+# Configuración de la página
 # -----------------------------
-st.set_page_config(page_title="CloudBox Empresarial", page_icon="☁️", layout="wide")
-st.markdown("<h1 style='text-align:center; color:#2E86C1;'>☁️ CloudBox Empresarial</h1>", unsafe_allow_html=True)
+st.set_page_config(
+    page_title="CloudBox Empresarial", 
+    page_icon="☁️", 
+    layout="wide"
+)
+st.markdown(
+    "<h1 style='text-align:center; color:#2E86C1;'>☁️ CloudBox Empresarial</h1>", 
+    unsafe_allow_html=True
+)
 
 # -----------------------------
 # Carpeta raíz
@@ -21,6 +28,8 @@ if not os.path.exists(ROOT_DIR):
 # -----------------------------
 if "ruta" not in st.session_state:
     st.session_state["ruta"] = ROOT_DIR
+if "uploader" not in st.session_state:
+    st.session_state["uploader"] = None
 
 # -----------------------------
 # Funciones auxiliares
@@ -72,7 +81,9 @@ st.divider()
 # Subir archivos múltiples
 # -----------------------------
 st.subheader("⬆️ Subir archivos")
-archivos_subir = st.file_uploader("Selecciona archivos", type=None, accept_multiple_files=True)
+archivos_subir = st.file_uploader(
+    "Selecciona archivos", type=None, accept_multiple_files=True, key="uploader"
+)
 if archivos_subir:
     for archivo in archivos_subir:
         ruta_guardar = os.path.join(st.session_state["ruta"], archivo.name)
@@ -82,6 +93,9 @@ if archivos_subir:
     placeholder.success(f"✅ {len(archivos_subir)} archivo(s) subido(s) con éxito")
     time.sleep(2)
     placeholder.empty()
+    
+    # Limpiar uploader después de subir
+    st.session_state["uploader"] = None
 
 st.divider()
 
@@ -91,37 +105,51 @@ st.divider()
 st.subheader("📂 Contenido de la carpeta")
 carpetas, archivos = listar(st.session_state["ruta"])
 
-# Carpetas
+# Manejo de carpetas con menú "clic derecho" simulado
 for carpeta in carpetas:
     carpeta_path = os.path.join(st.session_state["ruta"], carpeta)
-    col1, col2, col3 = st.columns([4,1,1])
+    col1, col2 = st.columns([4,1])
 
-    # Abrir carpeta
-    if col1.button(f"📁 {carpeta}", key=f"open_{carpeta}"):
-        st.session_state["ruta"] = carpeta_path
+    with col1:
+        # Abrir carpeta
+        if st.button(f"📁 {carpeta}", key=f"open_{carpeta}"):
+            st.session_state["ruta"] = carpeta_path
 
-    # Editar carpeta
-    nuevo_nombre = col2.text_input("", key=f"edit_{carpeta}", value=carpeta)
-    if col2.button("✏️", key=f"save_{carpeta}"):
-        if nuevo_nombre and nuevo_nombre != carpeta:
-            nueva_ruta = os.path.join(st.session_state["ruta"], nuevo_nombre)
-            os.rename(carpeta_path, nueva_ruta)
+    with col2:
+        # Menú desplegable
+        accion = st.selectbox(
+            "Opciones", ["", "Editar", "Eliminar"], key=f"menu_{carpeta}", index=0
+        )
+
+        # Eliminar carpeta
+        if accion == "Eliminar":
+            shutil.rmtree(carpeta_path)
             placeholder = st.empty()
-            placeholder.success(f"✏️ Carpeta renombrada a '{nuevo_nombre}'")
-            time.sleep(2)
+            placeholder.success(f"🗑️ Carpeta '{carpeta}' eliminada")
+            time.sleep(1)
             placeholder.empty()
-            carpetas, _ = listar(st.session_state["ruta"])
+            st.experimental_rerun()
 
-    # Eliminar carpeta
-    if col3.button("🗑️", key=f"del_{carpeta}"):
-        shutil.rmtree(carpeta_path)
-        placeholder = st.empty()
-        placeholder.success(f"🗑️ Carpeta '{carpeta}' eliminada")
-        carpetas, _ = listar(st.session_state["ruta"])
-        time.sleep(2)
-        placeholder.empty()
+        # Editar carpeta
+        if accion == "Editar":
+            nuevo_nombre = st.text_input(
+                "Nuevo nombre:", value=carpeta, key=f"edit_{carpeta}"
+            )
+            if st.session_state.get(f"enter_pressed_{carpeta}", False):
+                st.session_state[f"enter_pressed_{carpeta}"] = False
+                if nuevo_nombre and nuevo_nombre != carpeta:
+                    nueva_ruta = os.path.join(st.session_state["ruta"], nuevo_nombre)
+                    os.rename(carpeta_path, nueva_ruta)
+                    placeholder = st.empty()
+                    placeholder.success(f"✏️ Carpeta renombrada a '{nuevo_nombre}'")
+                    time.sleep(1)
+                    placeholder.empty()
+                    st.experimental_rerun()
 
-# Archivos
+            if st.button("Guardar", key=f"save_{carpeta}"):
+                st.session_state[f"enter_pressed_{carpeta}"] = True
+
+# Manejo de archivos
 for archivo in archivos:
     ruta_archivo = os.path.join(st.session_state["ruta"], archivo)
     col1, col2, col3 = st.columns([4,1,1])
@@ -144,7 +172,7 @@ for archivo in archivos:
             time.sleep(2)
             placeholder.empty()
 
-    # Vista previa universal
+    # Vista previa según tipo
     ext = archivo.lower().split(".")[-1]
     if ext in ["png", "jpg", "jpeg", "gif"]:
         st.image(ruta_archivo, use_column_width=True)
@@ -157,4 +185,7 @@ for archivo in archivos:
             contenido = f.read()
         st.text_area("📜 Contenido:", contenido, height=200, key=f"text_{archivo}")
     else:
-        st.info("🛈 Vista previa solo disponible para imágenes, PDF y textos. Usa el botón 'Descargar' para abrir este archivo.")
+        st.info(
+            "🛈 Vista previa solo disponible para imágenes, PDF y textos. "
+            "Usa el botón 'Descargar' para abrir este archivo."
+        )
