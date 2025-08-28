@@ -40,16 +40,18 @@ def listar(ruta):
     archivos = [f for f in elementos if os.path.isfile(os.path.join(ruta, f))]
     return carpetas, archivos
 
-def icono_archivo(nombre):
+def estilo_archivo(nombre):
     ext = nombre.lower().split(".")[-1]
-    if ext in ["png", "jpg", "jpeg", "gif"]:
-        return "🖼️"
-    elif ext == "pdf":
-        return "📄"
-    elif ext in ["txt", "csv", "md"]:
-        return "📜"
+    if ext in ["xls", "xlsx", "xlsm"]:
+        return "🟩 Excel"
+    elif ext in ["doc", "docx"]:
+        return "🟦 Word"
+    elif ext in ["ppt", "pptx"]:
+        return "🟧 PowerPoint"
+    elif ext in ["png", "jpg", "jpeg", "gif"]:
+        return "🖼️ Imagen"
     else:
-        return "📁"
+        return "🟫 Otro"
 
 # -----------------------------
 # Controles superiores
@@ -168,7 +170,7 @@ for archivo in archivos:
     ruta_archivo = os.path.join(st.session_state["ruta"], archivo)
     col1, col2, col3 = st.columns([4,1,1])
     with col1:
-        st.markdown(f"{icono_archivo(archivo)} **{archivo}**")
+        st.markdown(f"{estilo_archivo(archivo)} **{archivo}**")
     with col2:
         with open(ruta_archivo, "rb") as f:
             st.download_button("⬇️ Descargar", f, file_name=archivo, key=f"down_{archivo}")
