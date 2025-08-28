@@ -87,9 +87,6 @@ if archivos_subir:
     # Limpiar uploader para que no se quede el archivo en pantalla
     st.session_state["uploader"] = None
 
-
-st.divider()
-
 # -----------------------------
 # Listar carpetas y archivos
 # -----------------------------
